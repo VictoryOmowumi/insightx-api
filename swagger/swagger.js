@@ -73,7 +73,10 @@ const swaggerOptions = {
     apis: ['./routes/*.js'],
   };
 
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-module.exports = (app) => {
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+  const swaggerUiAssetPath = require('swagger-ui-dist').absolutePath();
+  
+  
+  const swaggerDocs = swaggerJsDoc(swaggerOptions);
+  module.exports = (app) => {
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 };
