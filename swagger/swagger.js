@@ -77,6 +77,11 @@ const swaggerOptions = {
   
   
   const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
+  module.exports = (app) => {
+    app.use('/api-docs', express.static(swaggerUiAssetPath));
+  };
+
   module.exports = (app) => {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 };
