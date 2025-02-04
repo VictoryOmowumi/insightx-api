@@ -27,6 +27,9 @@
     "swagger-ui-express": "^5.0.1",
     "twilio": "^5.4.3"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "devDependencies": {
     "nodemon": "^3.1.9"
   }

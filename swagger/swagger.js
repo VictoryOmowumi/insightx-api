@@ -46,11 +46,14 @@ const swaggerOptions = {
           description: 'Manage user roles and permissions',
         }
       ],
-      servers: [
-        {
-          url: `http://localhost:${PORT}`,
-          description: 'Local Development Server',
-        },
+    //   servers: [
+    //     {
+    //       url: `http://localhost:${PORT}`,
+    //       description: 'Local Development Server',
+    //     },
+    //   ],
+    servers: [
+        { url: 'https://insightx-api.vercel.app', description: 'Production server' },
       ],
       components: {
         securitySchemes: {
