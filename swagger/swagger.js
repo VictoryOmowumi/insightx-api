@@ -2,7 +2,7 @@
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 const swaggerOptions = {
     swaggerDefinition: {
@@ -46,15 +46,16 @@ const swaggerOptions = {
           description: 'Manage user roles and permissions',
         }
       ],
-    //   servers: [
-    //     {
-    //       url: `http://localhost:${PORT}`,
-    //       description: 'Local Development Server',
-    //     },
-    //   ],
-    servers: [
-        { url: 'https://insightx-api.vercel.app', description: 'Production server' },
+      servers: [
+        // {
+        //   url: `http://localhost:${PORT}`,
+        //   description: 'Local Development Server',
+        // },
+        {
+          url: 'http://localhost:5000',
+        },
       ],
+    
       components: {
         securitySchemes: {
           bearerAuth: {
@@ -73,15 +74,9 @@ const swaggerOptions = {
     apis: ['./routes/*.js'],
   };
 
-  const swaggerUiAssetPath = require('swagger-ui-dist').absolutePath();
   
-  
-  const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
-  module.exports = (app) => {
-    app.use('/api-docs', express.static(swaggerUiAssetPath));
-  };
-
-  module.exports = (app) => {
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+module.exports = (app) => {
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 };

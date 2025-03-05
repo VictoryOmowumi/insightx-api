@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-exports.adminAuthMiddleware = async (req, res, next) => {
+const adminAuthMiddleware = async (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
-
+ 
   if (!token) {
     return res.status(401).json({ message: 'Access denied. No token provided.' });
   }
@@ -11,7 +11,8 @@ exports.adminAuthMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-    if (!user || user.role !== 'Manager') throw new Error();
+   
+    if (!user || user.role !== 'Admin') throw new Error(); // Check for 'Admin' role
 
     req.user = user; // Attach user to the request object
     next();
@@ -19,3 +20,5 @@ exports.adminAuthMiddleware = async (req, res, next) => {
     res.status(401).json({ message: 'Invalid token or unauthorized access.' });
   }
 };
+
+module.exports = adminAuthMiddleware;

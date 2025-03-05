@@ -1,16 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const agentController = require('../controllers/agentController');
-const { adminAuthMiddleware } = require('../middleware/adminAuthMiddleware');
-const { agentAuthMiddleware } = require('../middleware/agentAuthMiddleware');
+const adminAuthMiddleware = require('../middleware/adminAuthMiddleware');
+const agentAuthMiddleware = require('../middleware/agentAuthMiddleware');
 const { validateAgentRegistration } = require('../middleware/validationMiddleware');
-
-/**
- * @swagger
- * tags:
- *   name: Agents
- *   description: Agent authentication and form management
- */
 
 /**
  * @swagger
@@ -79,6 +72,125 @@ router.post('/login', agentController.loginAgent);
 
 /**
  * @swagger
+ * /api/agents:
+ *   get:
+ *     summary: Get all agents
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of agents
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Agent'
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/', adminAuthMiddleware, agentController.getAgents);
+
+/**
+ * @swagger
+ * /api/agents/{id}:
+ *   get:
+ *     summary: Get agent by ID
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent details retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Agent'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Agent not found
+ */
+router.get('/:id', agentController.getAgentById);
+
+/**
+ * @swagger
+ * /api/agents/summary:
+ *   get:
+ *     summary: Get agents summary
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Agents summary retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalAgents:
+ *                   type: number
+ *                 activeAgents:
+ *                   type: number
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/summary', adminAuthMiddleware, agentController.getAgentsSummary);
+
+/**
+ * @swagger
+ * /api/agents/{id}/summary:
+ *   get:
+ *     summary: Get agent summary by ID
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Agent summary retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 activityCount:
+ *                   type: number
+ *                 submissionCount:
+ *                   type: number
+ *                 recentSubmissionCount:
+ *                   type: number
+ *                 submissionStatusCount:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       count:
+ *                         type: number
+ *                 assignedForms:
+ *                   type: number
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/:id/summary', agentController.getAgentSummaryById);
+
+/**
+ * @swagger
  * /api/agents/{id}/forms:
  *   get:
  *     summary: Get forms assigned to an agent by ID
@@ -103,7 +215,7 @@ router.post('/login', agentController.loginAgent);
  *       401:
  *         description: Unauthorized
  */
-router.get('/:id/forms', adminAuthMiddleware, agentController.getAssignedForms);
+router.get('/:id/forms', agentController.getAssignedForms);
 
 /**
  * @swagger
@@ -126,8 +238,6 @@ router.get('/:id/forms', adminAuthMiddleware, agentController.getAssignedForms);
  *           schema:
  *             type: object
  *             properties:
- *               storeDetails:
- *                 type: object
  *               formData:
  *                 type: object
  *     responses:
@@ -169,6 +279,8 @@ router.post('/request-password-reset', agentController.requestPasswordReset);
  *   post:
  *     summary: Reset password
  *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -186,6 +298,98 @@ router.post('/request-password-reset', agentController.requestPasswordReset);
  *       400:
  *         description: Invalid or expired token
  */
-router.post('/reset-password', agentController.resetPassword);
+router.post('/reset-password', agentAuthMiddleware, agentController.resetPassword);
+
+
+/**
+ * @swagger
+ * /api/agents/{id}/activities/{activityId}:
+ *   get:
+ *     summary: Get a single activity assigned to an agent
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: activityId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Activity details retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Activity'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Activity not found
+ */
+router.get('/:id/activities/:activityId', agentController.getActivityByAgent);
+
+/**
+ * @swagger
+ * /api/agents/forms/{id}:
+ *   get:
+ *     summary: Get a single form assigned to an agent
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Form details retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Form'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Form not found
+ */
+router.get('/forms/:id', agentController.getFormById);
+
+/**
+ * @swagger
+ * /api/agents/{id}/activities:
+ *   get:
+ *     summary: Get activities assigned to an agent
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of activities assigned to the agent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Activity'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Agent not found
+ */
+router.get('/:id/activities', agentController.getActivitiesByAgent);
 
 module.exports = router;

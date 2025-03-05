@@ -3,14 +3,17 @@ const bcrypt = require('bcryptjs');
 
 const AgentSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, },
+  email: { type: String },
   phone: { type: String, required: true, unique: true },
   address: { type: String },
   password: { type: String, required: true },
+  identifier: { type: String, unique: true, required: true }, // Add identifier field
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   activities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Activity' }],
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 });
 
 // Hash the password before saving
