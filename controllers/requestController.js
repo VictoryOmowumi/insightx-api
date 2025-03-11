@@ -3,7 +3,8 @@ const RequestHistory = require('../models/RequestHistory');
 const RequestCopy = require('../models/RequestCopy');
 const RecentActivity = require('../models/RecentActivity');
 const User = require('../models/User');
-const { sendNotification } = require('../utils/notification');
+const { sendEmailNotification } = require('../utils/notification');
+const { sendNotification, createNotification } = require('../utils/appNotification');
 
 // Create a new request
 
@@ -44,21 +45,26 @@ exports.createRequest = async (req, res) => {
     // Notify admin
     const admin = await User.findOne({ role: 'admin' });
     if (admin) {
-      await sendNotification(
+      await sendEmailNotification(
         admin.email,
         'New Request Created',
         'created',
         newRequest,
         process.env.BASE_URL // e.g., 'http://localhost:5000'
       );
+
+      // Send in-app notification to admin
+      await sendNotification(admin._id, 'newRequest', `New request created: ${request_title}`);
     }
+
+    // Notify requester
+    await sendNotification(user_id, 'requestCreated', `Your request "${request_title}" has been created.`);
 
     res.status(201).json(newRequest);
   } catch (error) {
     res.status(500).json({ message: 'Error creating request', error });
   }
 };
-
 // Update a request
 
 // @desc    Update a request
@@ -119,6 +125,9 @@ exports.updateRequest = async (req, res) => {
         icon: "RiShoppingCart2Fill",
         user: req.user.name,
       });
+
+      // Notify requester
+      await sendNotification(request.user_id, 'requestModified', `Your request "${request.request_title}" has been modified.`);
     } else {
       request.status = action;
       request.updated_at = Date.now();
@@ -131,6 +140,9 @@ exports.updateRequest = async (req, res) => {
         icon: "RiShoppingCart2Fill",
         user: req.user.name,
       });
+
+      // Notify requester
+      await sendNotification(request.user_id, 'requestStatusChanged', `Your request "${request.request_title}" has been ${action}.`);
     }
 
     // Log history
@@ -141,16 +153,10 @@ exports.updateRequest = async (req, res) => {
       notes,
     });
 
-    // Notify user
-    const user = await User.findById(request.user_id);
-    if (user) {
-      await sendNotification(
-        user.email,
-        `Request ${action}`,
-        action,
-        request,
-        process.env.BASE_URL
-      );
+    // Notify admin
+    const admin = await User.findOne({ role: 'admin' });
+    if (admin) {
+      await sendNotification(admin._id, 'requestUpdated', `Request "${request.request_title}" has been ${action}.`);
     }
 
     res.status(200).json(request);
@@ -271,6 +277,15 @@ exports.deleteRequest = async (req, res) => {
       icon: "RiShoppingCart2Fill",
       user: req.user.name,
     });
+
+    // Notify requester
+    await sendNotification(request.user_id, 'requestDeleted', `Your request "${request.request_title}" has been deleted.`);
+
+    // Notify admin
+    const admin = await User.findOne({ role: 'admin' });
+    if (admin) {
+      await sendNotification(admin._id, 'requestDeleted', `Request "${request.request_title}" has been deleted.`);
+    }
 
     res.json({ message: 'Request deleted' });
   } catch (err) {

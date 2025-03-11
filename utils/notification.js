@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-exports.sendNotification = async (email, subject, action, request, baseUrl) => {
+exports.sendEmailNotification = async (email, subject, action, request, baseUrl) => {
   // Generate the URL for the admin to view/modify the request
   const requestUrl = `${baseUrl}/requests/${request._id}`;
 

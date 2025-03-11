@@ -15,6 +15,8 @@ const AdminSettingsSchema = new mongoose.Schema({
       name: String,
       email: String,
       role: String,
+      isActive: { type: Boolean, default: true }, // Add this field
+      lastLogin: { type: Date },
     },
   ],
   });

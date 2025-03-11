@@ -8,8 +8,8 @@ const Agent = require('../models/Agent');
 const Form = require('../models/Form');
 const formatCurrency = require('../utils/helpers').formatCurrency;
 const formatCurrencyShortForm = require('../utils/helpers').formatCurrencyShortForm;
-
-
+const { sendNotification, createNotification } = require('../utils/appNotification');
+const { getIo } = require('../utils/socket');
 // @desc    Get all activities
 // @route   GET /api/activities
 // @access  Public
@@ -45,12 +45,12 @@ exports.getActivities = async (req, res) => {
 exports.getActivityById = async (req, res) => {
   try {
     const activity = await Activity.findById(req.params.id)
-      .populate('createdBy', 'name email') 
-      .populate('dependencies', 'title status') 
-      .populate('discussions.user', 'name email') 
-      .populate('collaborators', 'name email') 
-      .populate('assignedTo', 'name forms phone') 
-      .populate('forms'); 
+      .populate('createdBy', 'name email')
+      .populate('dependencies', 'title status')
+      .populate('discussions.user', 'name email')
+      .populate('collaborators', 'name email')
+      .populate('assignedTo', 'name forms phone')
+      .populate('forms');
 
     if (!activity) {
       return res.status(404).json({ message: 'Activity not found.' });
@@ -67,7 +67,8 @@ exports.getActivityById = async (req, res) => {
 // @route   POST /api/activities
 // @access  Private
 exports.createActivity = async (req, res) => {
-  const { title, description, startDate, endDate, targetAudience, budget, channels, type, kpis, dependencies, status, assignedTo, forms } = req.body;
+  const { title, description, startDate, endDate, targetAudience, budget, channels, type, kpis, dependencies, assignedTo, forms } = req.body;
+  let { status } = req.body;
 
   // Ensure the user is authenticated
   if (!req.user) {
@@ -81,7 +82,7 @@ exports.createActivity = async (req, res) => {
     status = 'Upcoming';
   } else {
     status = 'In Progress';
-  } 
+  }
 
   const activity = new Activity({
     title,
@@ -120,6 +121,11 @@ exports.createActivity = async (req, res) => {
       icon: "PiClockCountdownFill",
       user: req.user.name,
     });
+
+    // Create and send notifications
+    const activityLink = `/activities/${savedActivity._id}`;
+    await createNotification(req.user.id, 'activity', `New activity created: ${title}, by ${req.user.name}`, activityLink);
+    await sendNotification(req.user.id, 'activity', `New activity "${title}" has been created by ${req.user.name} `, activityLink);
 
     res.status(201).json(savedActivity);
   } catch (err) {
@@ -167,6 +173,11 @@ exports.updateActivity = async (req, res) => {
         icon: "PiClockCountdownFill",
         user: req.user.name,
       });
+
+      // Create and send notifications
+      const activityLink = `/activities/${activity._id}`;
+      await createNotification(req.user.id, 'activity', `Activity "${activity.title}" updated by ${req.user.name}`, activityLink);
+      await sendNotification(req.user.id, 'activity', `Activity "${activity.title}" has been updated by ${req.user.name}`, activityLink);
     }
 
     // Update assigned agents
@@ -230,6 +241,11 @@ exports.deleteActivity = async (req, res) => {
       user: req.user.name,
     });
 
+    // Create and send notifications
+    await createNotification(req.user.id, 'activity', `Activity "${activity.title}" deleted by ${req.user.name}`);
+    await sendNotification(req.user.id, 'activity', `Activity "${activity.title}" has been deleted by ${req.user.name}`);
+
+
     res.json({ message: 'Activity deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -249,19 +265,24 @@ exports.addDiscussionMessage = async (req, res) => {
       return res.status(404).json({ message: 'Activity not found.' });
     }
 
-    // Extract mentioned users from the message
-    const mentions = (message.match(/@(\w+)/g) || []);
-    const mentionedUsernames = mentions.map((mention) => mention.slice(1)); // Remove the '@' symbol
+    const mentions = (message.match(/@([\w\s-]+)/g) || []);
+    const mentionedUsernames = mentions.map((mention) => mention.slice(1).trim());
 
     // Find the mentioned users in the database
-    const mentionedUsers = await User.find({ username: { $in: mentionedUsernames } });
+    const mentionedUsers = await User.find({
+      $or: [
+        { name: { $in: mentionedUsernames } }, // Match by name
+        { email: { $in: mentionedUsernames } }, // Match by email
+      ],
+    });
 
     // Add the message to the discussion
-    activity.discussions.push({
+    const newDiscussion = {
       user: req.user.id, // Authenticated user
       message,
       mentions: mentionedUsers.map((user) => user._id), // Store mentioned user IDs
-    });
+    };
+    activity.discussions.push(newDiscussion);
 
     await activity.save();
 
@@ -277,13 +298,40 @@ exports.addDiscussionMessage = async (req, res) => {
       user: req.user.name,
     });
 
+    const activityLink = `/activities/${activity._id}`;
+
     // Notify mentioned users
-    mentionedUsers.forEach((mentionedUser) => {
-      // Send a notification to the mentioned user
-      console.log(`Notifying ${mentionedUser.name}: You were mentioned by ${req.user.name}`);
-      // You can integrate a notification service here (e.g., WebSockets, email, etc.)
+    mentionedUsers.forEach(async (mentionedUser) => {
+      await sendNotification(
+        mentionedUser._id,
+        'mention',
+        `You were mentioned by ${req.user.name} in activity "${activity.title}" `,
+          activityLink,
+        {
+          activityId: activity._id,
+          activityTitle: activity.title,
+          activityType: activity.type,
+          activityStatus: activity.status,
+        }
+
+      );
     });
 
+    // Emit a WebSocket event for the new discussion message
+    const io = getIo(); 
+    const socket = io.sockets.sockets.get(req.user.socketId);
+    if (socket) {
+      socket.broadcast.emit('newDiscussionMessage', {
+        activityId: id,
+        discussion: newDiscussion,
+      });
+    }
+
+    io.to(id).emit('newDiscussionMessage', {
+      activityId: id,
+      discussion: newDiscussion,
+    });
+ 
     res.status(201).json(activity.discussions);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -342,6 +390,12 @@ exports.addFeedback = async (req, res) => {
       icon: "BiCommentDetail",
       user: req.user.name,
     });
+
+     // Create and send notifications
+     const activityLink = `/activities/${activity._id}`;
+     await createNotification(req.user.id, 'feedback', `Feedback added to activity "${activity.title}" by ${req.user.name}`, activityLink);
+     await sendNotification(req.user.id, 'feedback', `Feedback added to activity "${activity.title}" by ${req.user.name}`, activityLink);
+ 
 
     res.status(201).json(activity.feedback);
   } catch (err) {

@@ -59,25 +59,27 @@ exports.getAdminSettings = async (req, res) => {
           teamActivity: true,
           newMembers: true,
         },
-        teamMembers: allUsers.map(user => ({
+        teamMembers: allUsers.map((user) => ({
           userId: user._id,
           name: user.name,
           email: user.email,
           role: user.role,
-          lastLogin: user.lastLogin,
+          isActive: user.isActive, // Include isActive
+          lastLogin: user.lastLogin, // Include lastLogin
         })),
       });
       await settings.save();
     } else {
       // Populate teamMembers with user details
       const allUsers = await User.find({ _id: { $ne: req.user.id } });
-      console.log(allUsers); 
-      settings.teamMembers = allUsers.map(user => ({
+    
+      settings.teamMembers = allUsers.map((user) => ({
         userId: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        lastLogin: user.lastLogin || null,
+        isActive: user.isActive, // Include isActive
+        lastLogin: user.lastLogin, // Include lastLogin
       }));
       await settings.save();
     }
@@ -135,3 +137,5 @@ exports.getLoginHistory = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+

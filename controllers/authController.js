@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const LoginHistory = require('../models/LoginHistory');
+const { sendNotification } = require('../utils/appNotification');
 // @desc    Get all users
 // @route   GET /api/auth/users
 // @access  Public
@@ -36,11 +37,19 @@ exports.registerUser = async (req, res) => {
     user = new User({
       email,
       name,
-      role: role || 'Member', // Default role is 'Member'
-      password: hashedPassword, // Optional: Only if using password-based login
+      role: role || 'Member', 
+      password: hashedPassword,
     });
 
     await user.save();
+
+    // Send notification to admin about the new user and also to the user
+    const admins = await User.find({ role: 'Admin' });
+    admins.forEach(admin => {
+      sendNotification(admin.id, 'newMember', `New user ${name} has registered`);
+    });
+    sendNotification(user.id, 'newRequest', 'Your registration request has been received');
+
     res.status(201).json({ message: 'User registered successfully', user });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -57,7 +66,7 @@ exports.traditionalLogin = async (req, res) => {
     // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      await LoginHistory.create({ userId: null, status: 'failed' });
+      await LoginHistory.create({ userId: undefined, status: 'failed' });
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
@@ -69,7 +78,7 @@ exports.traditionalLogin = async (req, res) => {
     // Compare the provided password with the hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      await LoginHistory.create({ userId: user.id, status: 'failed' });
+      await LoginHistory.create({ userId: user._id, status: 'failed' });
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
@@ -89,29 +98,32 @@ exports.traditionalLogin = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '6h' }
     );
-    await LoginHistory.create({ userId: user.id, status: 'success' });
+    await LoginHistory.create({ userId: user._id, status: 'success' });
+
+    // Send notification on successful login
+    await sendNotification(user._id, 'login', `User ${user.name} logged in successfully`);
+
     res.json({ token });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-
-// @desc    Update user role (Admin only)
-// @route   PUT /api/auth/users/:id/role
+// @desc    Update user details (Admin only)
+// @route   PUT /api/auth/users/:id
 // @access  Private (Admin only)
-exports.updateUserRole = async (req, res) => {
+exports.updateUserDetails = async (req, res) => {
   try {
-    const { role } = req.body;
+    const { name, email, role, isActive } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { role },
+      { name, email, role, isActive },
       { new: true }
     );
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json({ message: 'User role updated successfully', user });
+    res.json({ message: 'User details updated successfully', user });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -136,7 +148,6 @@ exports.toggleUserStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 // @desc    Google OAuth login
 // @route   GET /api/auth/google
 // @access  Public
@@ -175,15 +186,16 @@ exports.googleCallback = (req, res, next) => {
         { expiresIn: '6h' }
       );
 
-      // Redirect or return the token
-      res.redirect(`http://localhost:5173?token=${token}`); // Redirect to frontend with token
+      // Retrieve the stored redirect path
+      const redirectPath = req.query.state || '/'; // Use state parameter for OAuth redirects
+
+      // Redirect to the stored path or the frontend with token
+      res.redirect(`http://localhost:5173${redirectPath}?token=${token}`);
     } catch (err) {
       return next(err);
     }
   })(req, res, next);
 };
-
-
 
 
 

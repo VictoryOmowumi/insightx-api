@@ -5,6 +5,8 @@ const Activity = require('../models/Activity');
 const User = require('../models/User');
 const slugify = require('slugify');
 const Agent = require('../models/Agent');
+const { sendNotification, createNotification } = require('../utils/appNotification');
+
 // @desc    Create a new form
 // @route   POST /api/forms
 // @access  Private

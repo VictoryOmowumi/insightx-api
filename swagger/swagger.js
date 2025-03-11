@@ -41,6 +41,7 @@ const swaggerOptions = {
           name: 'Settings',
           description: 'Manage roles and system settings',
         },
+      
         {
           name: 'Roles',
           description: 'Manage user roles and permissions',

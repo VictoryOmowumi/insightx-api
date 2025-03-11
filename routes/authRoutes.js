@@ -137,7 +137,7 @@ router.post('/login', authController.traditionalLogin);
  *       500:
  *         description: Server error
  */
-router.put('/users/:id/role', authController.updateUserRole);
+router.put('/users/:id/details', authController.updateUserDetails);
 
 /**
  * @swagger
