@@ -1,10 +1,10 @@
 const express = require('express');
 const http = require('http');
-const { initSocket } = require('../utils/socket'); // Adjusted path
-const connectDB = require('../config/db'); // Adjusted path
-const swaggerSetup = require('../swagger/swagger'); // Adjusted path
+const { initSocket } = require('./utils/socket'); // Import initSocket from socket.js
+const connectDB = require('./config/db');
+const swaggerSetup = require('./swagger/swagger');
 const cors = require('cors');
-const passport = require('../config/passport'); // Adjusted path
+const passport = require('./config/passport');
 const session = require('express-session');
 require('dotenv').config();
 
@@ -61,15 +61,15 @@ swaggerSetup(app);
 connectDB();
 
 // Routes
-app.use('/api/auth', require('../routes/authRoutes')); // Adjusted path
-app.use('/api/activities', require('../routes/activityRoutes')); // Adjusted path
-app.use('/api/forms', require('../routes/formRoutes')); // Adjusted path
-app.use('/api/agents', require('../routes/agentRoutes')); // Adjusted path
-app.use('/api/requests', require('../routes/requestRoutes')); // Adjusted path
-app.use('/api/dashboard', require('../routes/dashboardRoutes')); // Adjusted path
-app.use('/api/settings', require('../routes/settingRoutes')); // Adjusted path
-app.use('/api/notifications', require('../routes/notificationRoutes')); // Adjusted path
-app.use('/api/roles', require('../routes/roleRoutes')); // Adjusted path
+app.use('/api/auth', require('./routes/authRoutes')); // Auth routes
+app.use('/api/activities', require('./routes/activityRoutes')); // Activity routes
+app.use('/api/forms', require('./routes/formRoutes')); // Form routes
+app.use('/api/agents', require('./routes/agentRoutes'));
+app.use('/api/requests', require('./routes/requestRoutes')); // Request routes
+app.use('/api/dashboard', require('./routes/dashboardRoutes')); // Dashboard routes
+app.use('/api/settings', require('./routes/settingRoutes')); // Settings routes
+app.use('/api/notifications', require('./routes/notificationRoutes')); // Notification routes
+app.use('/api/roles', require('./routes/roleRoutes')); // Role routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {

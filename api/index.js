@@ -1,9 +1,9 @@
 const express = require('express');
 const serverless = require('serverless-http');
-const connectDB = require('./config/db');
-const swaggerSetup = require('./swagger/swagger');
+const connectDB = require('../config/db');
+const swaggerSetup = require('../swagger/swagger');
 const cors = require('cors');
-const passport = require('./config/passport');
+const passport = require('../config/passport');
 const session = require('express-session');
 require('dotenv').config();
 
@@ -56,15 +56,15 @@ swaggerSetup(app);
 connectDB();
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/activities', require('./routes/activityRoutes'));
-app.use('/api/forms', require('./routes/formRoutes'));
-app.use('/api/agents', require('./routes/agentRoutes'));
-app.use('/api/requests', require('./routes/requestRoutes'));
-app.use('/api/dashboard', require('./routes/dashboardRoutes'));
-app.use('/api/settings', require('./routes/settingRoutes'));
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/roles', require('./routes/roleRoutes'));
+app.use('/api/auth', require('../routes/authRoutes'));
+app.use('/api/activities', require('../routes/activityRoutes'));
+app.use('/api/forms', require('../routes/formRoutes'));
+app.use('/api/agents', require('../routes/agentRoutes'));
+app.use('/api/requests', require('../routes/requestRoutes'));
+app.use('/api/dashboard', require('../routes/dashboardRoutes'));
+app.use('/api/settings', require('../routes/settingRoutes'));
+app.use('/api/notifications', require('../routes/notificationRoutes'));
+app.use('/api/roles', require('../routes/roleRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
