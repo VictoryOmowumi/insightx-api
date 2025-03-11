@@ -4,7 +4,7 @@ const connectDB = require('../config/db');
 const swaggerSetup = require('../swagger/swagger');
 const cors = require('cors');
 const passport = require('../config/passport');
-const session = require('cookie-session');
+const session = require('express-session');
 const MemoryStore = require('connect-mongo')(session);
 require('dotenv').config();
 

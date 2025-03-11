@@ -6,6 +6,7 @@ const swaggerSetup = require('./swagger/swagger');
 const cors = require('cors');
 const passport = require('./config/passport');
 const session = require('express-session');
+const MemoryStore = require('connect-mongo')(session);
 require('dotenv').config();
 
 const app = express();
@@ -43,6 +44,9 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET, // Use a strong secret key
     resave: false,
+    store: new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    }),
     saveUninitialized: false,
     cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
   })
