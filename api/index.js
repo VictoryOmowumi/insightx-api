@@ -5,7 +5,7 @@ const swaggerSetup = require('../swagger/swagger');
 const cors = require('cors');
 const passport = require('../config/passport');
 const session = require('express-session');
-const MemoryStore = require('connect-mongo')(session);
+const MongoStore = require('connect-mongo'); // Correct import
 require('dotenv').config();
 
 const app = express();
@@ -42,7 +42,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({
+    store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
       collectionName: 'sessions',
     }),
