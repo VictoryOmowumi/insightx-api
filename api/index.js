@@ -5,6 +5,7 @@ const swaggerSetup = require('../swagger/swagger');
 const cors = require('cors');
 const passport = require('../config/passport');
 const session = require('express-session');
+const MongoStore = require('connect-mongo'); // Use connect-mongo for session store
 require('dotenv').config();
 
 const app = express();
@@ -35,13 +36,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Configure express-session
+// Configure express-session with MongoStore
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      collectionName: 'sessions',
+    }),
+    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
   })
 );
 
