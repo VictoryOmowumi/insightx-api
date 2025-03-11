@@ -1,4 +1,3 @@
-// index.js (in your project root)
 const express = require('express');
 const serverless = require('serverless-http');
 const connectDB = require('./config/db');
@@ -57,15 +56,15 @@ swaggerSetup(app);
 connectDB();
 
 // Routes
-app.use('/api/auth', require('../routes/authRoutes'));
-app.use('/api/activities', require('../routes/activityRoutes'));
-app.use('/api/forms', require('../routes/formRoutes'));
-app.use('/api/agents', require('../routes/agentRoutes'));
-app.use('/api/requests', require('../routes/requestRoutes'));
-app.use('/api/dashboard', require('../routes/dashboardRoutes'));
-app.use('/api/settings', require('../routes/settingRoutes'));
-app.use('/api/notifications', require('../routes/notificationRoutes'));
-app.use('/api/roles', require('../routes/roleRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/activities', require('./routes/activityRoutes'));
+app.use('/api/forms', require('./routes/formRoutes'));
+app.use('/api/agents', require('./routes/agentRoutes'));
+app.use('/api/requests', require('./routes/requestRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/settings', require('./routes/settingRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/roles', require('./routes/roleRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
