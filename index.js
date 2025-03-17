@@ -12,23 +12,29 @@ const app = express();
 const server = http.createServer(app);
 const io = initSocket(server); // Initialize Socket.IO
 
-// Middleware
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5000',
   'http://localhost:5174',
   'http://localhost:4173',
   'https://insightx-agent-65kh.vercel.app',
   'https://insightx-agent.netlify.app',
-  'https://insightx-agent-65kh.vercel.app/login', // Add specific path if needed
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (e.g., mobile apps, server-to-server requests)
+    if (!origin) {
+      return callback(null, true);
     }
+
+    // Check if the origin is allowed
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Disallow other origins
+    return callback(new Error('Not allowed by CORS'));
   },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: 'Content-Type, Authorization',
@@ -36,6 +42,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+
 app.use(express.json());
 
 // Configure express-session
@@ -61,15 +69,16 @@ swaggerSetup(app);
 connectDB();
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes')); // Auth routes
-app.use('/api/activities', require('./routes/activityRoutes')); // Activity routes
-app.use('/api/forms', require('./routes/formRoutes')); // Form routes
+app.use('/api/auth', require('./routes/authRoutes')); 
+app.use('/api/activities', require('./routes/activityRoutes')); 
+app.use('/api/forms', require('./routes/formRoutes')); 
 app.use('/api/agents', require('./routes/agentRoutes'));
-app.use('/api/requests', require('./routes/requestRoutes')); // Request routes
-app.use('/api/dashboard', require('./routes/dashboardRoutes')); // Dashboard routes
-app.use('/api/settings', require('./routes/settingRoutes')); // Settings routes
-app.use('/api/notifications', require('./routes/notificationRoutes')); // Notification routes
-app.use('/api/roles', require('./routes/roleRoutes')); // Role routes
+app.use('/api/requests', require('./routes/requestRoutes')); 
+app.use('/api/dashboard', require('./routes/dashboardRoutes')); 
+app.use('/api/settings', require('./routes/settingRoutes')); 
+app.use('/api/notifications', require('./routes/notificationRoutes')); 
+app.use('/api/roles', require('./routes/roleRoutes')); 
+app.use('/api/regions', require('./routes/regionRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

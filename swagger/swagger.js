@@ -45,6 +45,10 @@ const swaggerOptions = {
         {
           name: 'Roles',
           description: 'Manage user roles and permissions',
+        },
+        {
+          name: 'Regions',
+          description: 'Manage regions and territories',
         }
       ],
       servers: [

@@ -8,11 +8,23 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendSMS } = require('../utils/sms'); // SMS utility function
 
+const regions = [
+  { code: '001', description: 'Ikeja' },
+  { code: '002', description: 'Ibadan' },
+  { code: '003', description: 'Kano' },
+  { code: '004', description: 'Kaduna' },
+  { code: '005', description: 'Aba' },
+  { code: '006', description: 'Ilorin' },
+  { code: '007', description: 'Benin' },
+  { code: '009', description: 'Enugu' },
+  { code: '010', description: 'Abuja' },
+];
+
 // @desc    Register a new agent
 // @route   POST /api/agents/register
 // @access  Private (Admin only)
 exports.registerAgent = async (req, res) => {
-  const { name, email, phone, address } = req.body;
+  const { name, email, phone, region, address } = req.body;
 
   try {
     // Check if the agent already exists
@@ -33,6 +45,7 @@ exports.registerAgent = async (req, res) => {
       name,
       email: email || undefined,
       phone,
+      region,
       address,
       password,
       identifier,
@@ -56,21 +69,20 @@ exports.registerAgent = async (req, res) => {
 // @access  Public
 exports.loginAgent = async (req, res) => {
   const { identifier, password } = req.body;
- 
+
   try {
     const agent = await Agent.findOne({ identifier });
-  
+
     if (!agent) {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
-  
-     // Check password
-     const isMatch = await bcrypt.compare(password, agent.password);
-   
-     if (!isMatch) {
-       return res.status(401).json({ message: 'Invalid credentials.' });
-     }
+    // Check password
+    const isMatch = await bcrypt.compare(password, agent.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
 
     // Generate JWT token with full agent details
     const token = jwt.sign(
@@ -149,19 +161,21 @@ exports.getAgents = async (req, res) => {
   try {
     const agents = await Agent.find();
 
-    // Add an incremental auto ID to each agent
-    const agentsWithAutoId = agents.map((agent, index) => ({
-      ...agent.toObject(),
-      autoId: index + 1,
-    }));
+    // Add an incremental auto ID and region description to each agent
+    const agentsWithAutoId = agents.map((agent, index) => {
+      const region = regions.find(r => r.code === agent.region);
+      return {
+        ...agent.toObject(),
+        autoId: index + 1,
+        regionDescription: region ? region.description : 'Unknown',
+      };
+    });
 
     res.json(agentsWithAutoId);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-
-
 
 // @desc    Get agent by ID
 // @route   GET /api/agents/:id
@@ -175,13 +189,18 @@ exports.getAgentById = async (req, res) => {
     if (!agent) {
       return res.status(404).json({ message: 'Agent not found.' });
     }
-    res.json(agent);
+
+    const region = regions.find(r => r.code === agent.region);
+    const agentWithRegionDescription = {
+      ...agent.toObject(),
+      regionDescription: region ? region.description : 'Unknown',
+    };
+
+    res.json(agentWithRegionDescription);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-
-
 
 // @desc    Get activities assigned to an agent
 // @route   GET /api/agents/:id/activities
@@ -190,7 +209,10 @@ exports.getActivitiesByAgent = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const agent = await Agent.findById(id).populate('activities');
+    const agent = await Agent.findById(id).populate({
+      path: 'activities',
+      select: '_id title status startDate endDate description', // Select only the desired fields
+    });
     if (!agent) {
       return res.status(404).json({ message: 'Agent not found.' });
     }
@@ -255,8 +277,6 @@ exports.getFormById = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-
 
 // @desc    Get forms tied to an activity
 // @route   GET /api/activities/:id/forms

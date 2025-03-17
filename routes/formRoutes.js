@@ -140,6 +140,27 @@ router.get('/:id', checkFormAccess, formController.getForm);
 
 /**
  * @swagger
+ * /api/forms/{id}/duplicate:
+ *   post:
+ *     summary: Duplicate a form
+ *     tags: [Forms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       201:
+ *         description: Form duplicated
+ */
+router.post('/:id/duplicate', authMiddleware, formController.duplicateForm);
+
+
+/**
+ * @swagger
  * /api/forms:
  *   get:
  *     summary: Get all forms

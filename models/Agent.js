@@ -7,10 +7,11 @@ const AgentSchema = new mongoose.Schema({
   phone: { type: String, required: true, unique: true },
   address: { type: String },
   password: { type: String, required: true },
-  identifier: { type: String, unique: true, required: true }, // Add identifier field
+  identifier: { type: String, unique: true, required: true },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   activities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Activity' }],
+  region: { type: String, required: true }, 
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

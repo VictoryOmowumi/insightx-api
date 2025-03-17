@@ -18,6 +18,7 @@ const FormElementSchema = new mongoose.Schema({
       'FileField',
       'ProductField',
       'ParagraphField',
+      'RegionField',
     ],
     required: true,
   },

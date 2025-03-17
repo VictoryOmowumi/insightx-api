@@ -94,7 +94,7 @@ router.get('/users', authController.getUsers);
  *           schema:
  *             type: object
  *             properties:
- *               email:
+ *               emailOrUsername:
  *                 type: string
  *               password:
  *                 type: string

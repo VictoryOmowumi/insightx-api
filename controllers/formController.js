@@ -48,6 +48,59 @@ exports.createForm = async (req, res) => {
   }
 };
 
+// @desc    Duplicate a form
+// @route   POST /api/forms/:id/duplicate
+// @access  Private
+exports.duplicateForm = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const form = await Form.findById(id);
+    if (!form) {
+      return res.status(404).json({ message: 'Form not found.' });
+    }
+
+    // Generate a unique slug for the duplicated form
+    let slug = slugify(`${form.title}-copy`, { lower: true });
+    let slugExists = await Form.findOne({ slug });
+    let counter = 1;
+
+    while (slugExists) {
+      slug = slugify(`${form.title}-copy-${counter}`, { lower: true });
+      slugExists = await Form.findOne({ slug });
+      counter++;
+    }
+
+    // Create a new form with the same details
+    const duplicatedForm = new Form({
+      title: `${form.title} (Copy)`,
+      description: form.description,
+      elements: form.elements,
+      visibility: form.visibility,
+      assignedAgents: form.assignedAgents,
+      acceptResponses: form.acceptResponses,
+      status: 'draft', // Set the status to draft for the duplicated form
+      createdBy: req.user.id, // Authenticated user
+      slug,
+    });
+
+    const savedDuplicatedForm = await duplicatedForm.save();
+
+    // Log recent activity
+    await RecentActivity.create({
+      type: "Form Update",
+      description: `Form "${form.title}" duplicated by ${req.user.name}`,
+      icon: "RiFileTextFill",
+      user: req.user.name,
+    });
+
+    res.status(201).json(savedDuplicatedForm);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
 // @desc    Update a form
 // @route   PUT /api/forms/:id
 // @access  Private
@@ -204,7 +257,12 @@ exports.submitPublicForm = async (req, res) => {
 exports.getForms = async (req, res) => {
     try {
       const forms = await Form.find();
-      res.json(forms);
+      const formsWithAutoId = forms.map((form, index) => ({
+        ...form.toObject(),
+        autoId: index + 1,
+      }));
+  
+      res.json(formsWithAutoId);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }

@@ -4,6 +4,15 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const LoginHistory = require('../models/LoginHistory');
 const { sendNotification } = require('../utils/appNotification');
+const ldap = require('ldapjs');
+
+// LDAP server configuration
+const ldapConfig = {
+  url: 'ldap://10.10.15.50:389', 
+  baseDN: 'DC=sevenup,DC=org', 
+};
+
+
 // @desc    Get all users
 // @route   GET /api/auth/users
 // @access  Public
@@ -56,58 +65,88 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// @desc    Traditional email/password login
+
+
+
+
+// @desc    LDAP login (replaces traditional login)
 // @route   POST /api/auth/login
 // @access  Public
 exports.traditionalLogin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { emailOrUsername, password } = req.body;
 
-    // Find the user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      await LoginHistory.create({ userId: undefined, status: 'failed' });
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    const username = emailOrUsername.includes('@')
+      ? emailOrUsername.split('@')[0] 
+      : emailOrUsername; 
 
-    // Check if the user has a password (for users registered via traditional login)
-    if (!user.password) {
-      return res.status(400).json({ message: 'Please log in using Google OAuth' });
-    }
+    const userDN = `CN=${username},OU=Users,${ldapConfig.baseDN}`;
 
-    // Compare the provided password with the hashed password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      await LoginHistory.create({ userId: user._id, status: 'failed' });
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    const client = ldap.createClient({
+      url: ldapConfig.url,
+      timeout: 10000, // 10 seconds
+    });
 
-    // Update lastLogin field
-    user.lastLogin = new Date();
-    await user.save();
+    // Perform an anonymous bind to check if the server is reachable
+    client.bind('', '', (err) => {
+      if (err) {
+        console.error('LDAP anonymous bind failed:', err);
+        return res.status(500).json({ message: 'LDAP server not reachable' });
+      }
 
-    // Generate a JWT token
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        profilePic: user.profilePic,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '6h' }
-    );
-    await LoginHistory.create({ userId: user._id, status: 'success' });
+      // Perform the actual bind with credentials
+      client.bind(userDN, password, async (err) => {
+        if (err) {
+          console.error('LDAP bind failed:', err);
+          // await LoginHistory.create({ userId: undefined, status: 'failed' });
+          return res.status(400).json({ message: 'Invalid credentials' });
+        }
 
-    // Send notification on successful login
-    await sendNotification(user._id, 'login', `User ${user.name} logged in successfully`);
+        // Check if the user exists in the local database
+        let user = await User.findOne({ email: emailOrUsername });
+        if (!user) {
+          user = new User({
+            email: emailOrUsername, 
+            name: username, 
+            role: 'Member', 
+            password: undefined,
+          });
+          await user.save();
+        }
 
-    res.json({ token });
+        // Update lastLogin field
+        user.lastLogin = new Date();
+        await user.save();
+
+        // Generate a JWT token
+        const token = jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            profilePic: user.profilePic,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: '6h' }
+        );
+
+        // Log the login history
+        // await LoginHistory.create({ userId: user._id, status: 'success' });
+
+        // Send notification on successful login
+        // await sendNotification(user._id, 'login', `User ${user.name} logged in successfully`);
+
+        // Return the token
+        res.json({ token });
+      });
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
+
 
 // @desc    Update user details (Admin only)
 // @route   PUT /api/auth/users/:id
