@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    # Frontend: https://insightx-ten.vercel.app
     envVars:
       - key: NODE_ENV
         value: production

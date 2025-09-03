@@ -57,6 +57,10 @@ const swaggerOptions = {
           description: 'Production Server',
         },
         {
+          url: 'https://insightx-ten.vercel.app',
+          description: 'Production Frontend',
+        },
+        {
           url: 'http://localhost:5000',
           description: 'Local Development Server',
         },
