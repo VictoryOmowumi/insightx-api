@@ -18,6 +18,14 @@ const allowedOrigins = [
   'https://insightx-agent-65kh.vercel.app',
   'https://insightx-agent.netlify.app',
   'https://insightx-agent-65kh.vercel.app/login',
+  'https://insightx-webb-bhh50o2rm-victoryomowumis-projects.vercel.app',
+  'https://insightx-webb-iauecig7f-victoryomowumis-projects.vercel.app',
+  'https://insightx-webb-jfgl7qoxd-victoryomowumis-projects.vercel.app',
+  'https://insightx-webb-fgnx7bxz6-victoryomowumis-projects.vercel.app',
+  'https://insightx-webb-1zsxcav52-victoryomowumis-projects.vercel.app',
+  'https://insightx-webb-l4uorkezl-victoryomowumis-projects.vercel.app',
+  'https://insightx-webb.vercel.app',
+  'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
 ];
 
 const corsOptions = {
@@ -36,7 +44,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Configure express-session with MongoStore
+// Configure express-session with MongoStore for production
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -45,8 +53,12 @@ app.use(
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
       collectionName: 'sessions',
+      ttl: 24 * 60 * 60, // 24 hours
     }),
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production', 
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
   })
 );
 
@@ -70,6 +82,7 @@ app.use('/api/dashboard', require('../routes/dashboardRoutes'));
 app.use('/api/settings', require('../routes/settingRoutes'));
 app.use('/api/notifications', require('../routes/notificationRoutes'));
 app.use('/api/roles', require('../routes/roleRoutes'));
+app.use('/api/regions', require('../routes/regionRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -6,6 +6,7 @@ const swaggerSetup = require('./swagger/swagger');
 const cors = require('cors');
 const passport = require('./config/passport');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 require('dotenv').config();
 
 const app = express();
@@ -19,6 +20,9 @@ const allowedOrigins = [
   'http://localhost:4173',
   'https://insightx-agent-65kh.vercel.app',
   'https://insightx-agent.netlify.app',
+  'https://insightx-webb-bhh50o2rm-victoryomowumis-projects.vercel.app',
+  'https://insightx-webb.vercel.app',
+  'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
 ];
 
 const corsOptions = {
@@ -43,16 +47,22 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
 app.use(express.json());
 
-// Configure express-session
+// Configure express-session with MongoDB store for production
 app.use(
   session({
-    secret: process.env.SESSION_SECRET, // Use a strong secret key
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      ttl: 24 * 60 * 60, // 24 hours
+    }),
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production', 
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
   })
 );
 
@@ -86,7 +96,11 @@ app.use((err, req, res, next) => {
   res.status(500).send('Something broke!');
 });
 
-// Start Server
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// For Vercel serverless deployment
+if (process.env.NODE_ENV !== 'production') {
+  // Start Server only in development
+  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
 
-module.exports = { app, io }; // Export both app and io
+// Export for Vercel serverless
+module.exports = app;

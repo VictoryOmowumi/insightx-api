@@ -52,12 +52,13 @@ const swaggerOptions = {
         }
       ],
       servers: [
-        // {
-        //   url: `http://localhost:${PORT}`,
-        //   description: 'Local Development Server',
-        // },
+        {
+          url: 'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
+          description: 'Production Server',
+        },
         {
           url: 'http://localhost:5000',
+          description: 'Local Development Server',
         },
       ],
     
@@ -83,5 +84,19 @@ const swaggerOptions = {
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 module.exports = (app) => {
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+  // Serve Swagger JSON
+  app.get('/api-docs/swagger.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerDocs);
+  });
+
+  // Simple Swagger UI setup for Vercel
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: "InsightX API Documentation",
+    swaggerOptions: {
+      docExpansion: 'list',
+      filter: true,
+    },
+  }));
 };

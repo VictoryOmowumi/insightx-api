@@ -7,10 +7,7 @@ const { sendNotification } = require('../utils/appNotification');
 const ldap = require('ldapjs');
 
 // LDAP server configuration
-const ldapConfig = {
-  url: 'ldap://10.10.15.50:389', 
-  baseDN: 'DC=sevenup,DC=org', 
-};
+
 
 
 // @desc    Get all users
@@ -74,72 +71,57 @@ exports.registerUser = async (req, res) => {
 // @access  Public
 exports.traditionalLogin = async (req, res) => {
   try {
-    const { emailOrUsername, password } = req.body;
+    const { email, password } = req.body;
 
-    const username = emailOrUsername.includes('@')
-      ? emailOrUsername.split('@')[0] 
-      : emailOrUsername; 
-
-    const userDN = `CN=${username},OU=Users,${ldapConfig.baseDN}`;
-
-    const client = ldap.createClient({
-      url: ldapConfig.url,
-      timeout: 10000, // 10 seconds
+    // Check if the user exists in the database
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    // Check if the password is correct
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    
+    // Generate a JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      process.env.JWT_SECRET || 'temporary_secret_key_for_development_only',
+      { expiresIn: '6h' }
+    );
+    
+    // Store the login history
+    const loginHistory = new LoginHistory({
+      userId: user.id,
+      timestamp: new Date(),
+      status: 'success',
     });
-
-    // Perform an anonymous bind to check if the server is reachable
-    client.bind('', '', (err) => {
-      if (err) {
-        console.error('LDAP anonymous bind failed:', err);
-        return res.status(500).json({ message: 'LDAP server not reachable' });
+    await loginHistory.save();
+    
+    // Send notification to admin about the login
+    const admins = await User.find({ role: 'Admin' });
+    admins.forEach(admin => {
+      sendNotification(admin.id, 'login', `${user.name} has logged in`);
+    });
+    
+    // Return the token and user details
+    res.json({ 
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
       }
-
-      // Perform the actual bind with credentials
-      client.bind(userDN, password, async (err) => {
-        if (err) {
-          console.error('LDAP bind failed:', err);
-          // await LoginHistory.create({ userId: undefined, status: 'failed' });
-          return res.status(400).json({ message: 'Invalid credentials' });
-        }
-
-        // Check if the user exists in the local database
-        let user = await User.findOne({ email: emailOrUsername });
-        if (!user) {
-          user = new User({
-            email: emailOrUsername, 
-            name: username, 
-            role: 'Member', 
-            password: undefined,
-          });
-          await user.save();
-        }
-
-        // Update lastLogin field
-        user.lastLogin = new Date();
-        await user.save();
-
-        // Generate a JWT token
-        const token = jwt.sign(
-          {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            profilePic: user.profilePic,
-          },
-          process.env.JWT_SECRET,
-          { expiresIn: '6h' }
-        );
-
-        // Log the login history
-        // await LoginHistory.create({ userId: user._id, status: 'success' });
-
-        // Send notification on successful login
-        // await sendNotification(user._id, 'login', `User ${user.name} logged in successfully`);
-
-        // Return the token
-        res.json({ token });
-      });
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -221,7 +203,7 @@ exports.googleCallback = (req, res, next) => {
           accessToken: user.googleAccessToken,
           refreshToken: user.googleRefreshToken,
         },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || 'temporary_secret_key_for_development_only',
         { expiresIn: '6h' }
       );
 
@@ -229,7 +211,10 @@ exports.googleCallback = (req, res, next) => {
       const redirectPath = req.query.state || '/'; // Use state parameter for OAuth redirects
 
       // Redirect to the stored path or the frontend with token
-      res.redirect(`http://localhost:5173${redirectPath}?token=${token}`);
+      const frontendUrl = process.env.NODE_ENV === 'production'
+        ? 'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app'
+        : 'http://localhost:5173';
+      res.redirect(`${frontendUrl}${redirectPath}?token=${token}`);
     } catch (err) {
       return next(err);
     }

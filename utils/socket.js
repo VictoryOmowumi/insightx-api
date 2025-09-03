@@ -3,9 +3,16 @@ const socketIo = require('socket.io');
 let io;
 
 const initSocket = (server) => {
+  const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? [
+        'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
+        'https://insightx-webb.vercel.app'
+      ]
+    : ['http://localhost:5173'];
+
   io = socketIo(server, {
     cors: {
-      origin: 'http://localhost:5173', // Allow all origins (adjust for production)
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },

@@ -340,7 +340,9 @@ exports.deleteForm = async (req, res) => {
       });
   
       // Return a general URL for the form
-      const formUrl = `http://localhost:5173/forms/response/${form.slug}/${id}`;
+      const formUrl = process.env.NODE_ENV === 'production'
+        ? `https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app/forms/response/${form.slug}/${id}`
+        : `http://localhost:5173/forms/response/${form.slug}/${id}`;
   
       res.json({ ...savedForm.toObject(), url: formUrl });
     } catch (err) {
