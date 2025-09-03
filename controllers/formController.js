@@ -341,7 +341,7 @@ exports.deleteForm = async (req, res) => {
   
       // Return a general URL for the form
       const formUrl = process.env.NODE_ENV === 'production'
-        ? `https://insightx.onrender.com/forms/response/${form.slug}/${id}`
+        ? `https://insightx-ya2k.onrender.com/forms/response/${form.slug}/${id}`
         : `http://localhost:5173/forms/response/${form.slug}/${id}`;
   
       res.json({ ...savedForm.toObject(), url: formUrl });

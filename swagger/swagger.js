@@ -53,7 +53,7 @@ const swaggerOptions = {
       ],
       servers: [
         {
-          url: 'https://insightx.onrender.com',
+          url: 'https://insightx-ya2k.onrender.com',
           description: 'Production Server',
         },
         {

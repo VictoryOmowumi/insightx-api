@@ -212,7 +212,7 @@ exports.googleCallback = (req, res, next) => {
 
       // Redirect to the stored path or the frontend with token
       const frontendUrl = process.env.NODE_ENV === 'production'
-        ? 'https://insightx.onrender.com'
+        ? 'https://insightx-ya2k.onrender.com'
         : 'http://localhost:5173';
       res.redirect(`${frontendUrl}${redirectPath}?token=${token}`);
     } catch (err) {
