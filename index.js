@@ -96,11 +96,11 @@ app.use((err, req, res, next) => {
   res.status(500).send('Something broke!');
 });
 
-// For Vercel serverless deployment
-if (process.env.NODE_ENV !== 'production') {
-  // Start Server only in development
-  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-}
+// For Render deployment - always listen in production
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+});
 
-// Export for Vercel serverless
+// Export for Render deployment
 module.exports = app;
