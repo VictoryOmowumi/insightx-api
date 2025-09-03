@@ -25,7 +25,7 @@ const allowedOrigins = [
   'https://insightx-webb-1zsxcav52-victoryomowumis-projects.vercel.app',
   'https://insightx-webb-l4uorkezl-victoryomowumis-projects.vercel.app',
   'https://insightx-webb.vercel.app',
-  'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
+  'https://insightx.onrender.com',
 ];
 
 const corsOptions = {

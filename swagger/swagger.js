@@ -53,7 +53,7 @@ const swaggerOptions = {
       ],
       servers: [
         {
-          url: 'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
+          url: 'https://insightx.onrender.com',
           description: 'Production Server',
         },
         {

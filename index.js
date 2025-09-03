@@ -22,7 +22,7 @@ const allowedOrigins = [
   'https://insightx-agent.netlify.app',
   'https://insightx-webb-bhh50o2rm-victoryomowumis-projects.vercel.app',
   'https://insightx-webb.vercel.app',
-  'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
+  'https://insightx.onrender.com',
 ];
 
 const corsOptions = {

@@ -5,7 +5,7 @@ let io;
 const initSocket = (server) => {
   const allowedOrigins = process.env.NODE_ENV === 'production' 
     ? [
-        'https://insightx-1ixfenb9u-victoryomowumis-projects.vercel.app',
+        'https://insightx.onrender.com',
         'https://insightx-webb.vercel.app'
       ]
     : ['http://localhost:5173'];
