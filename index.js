@@ -20,6 +20,7 @@ const allowedOrigins = [
   'http://localhost:4173',
   'https://insightx-ya2k.onrender.com',
   'https://insightx-ten.vercel.app',
+  'https://insightx-agent.vercel.app',
   'https://insightx-agent.vercel.app/',	
 ];
 
